@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
     .run()
 
   if (pruneToOwnProjects) {
-    const removedFrom = pruneAgentMemberships(agentsOf(id).map(a => a.id), { id, isAdmin: 0 })
+    const removedFrom = pruneAgentMemberships(agentsOf(id).map(a => a.id), { id, isAdmin: 0 }, user)
     return { ok: true, removedFrom }
   }
 

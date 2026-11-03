@@ -30,7 +30,10 @@ export default defineEventHandler(async (event) => {
   // is gone they show as having no manager until an admin transfers them.
   suspendAgents(activeAgentsOf(user.id).map(a => a.id))
 
-  db.delete(schema.users).where(eq(schema.users.id, user.id)).run()
+  db.transaction(() => {
+    recordAccountRemoval(user, user)
+    db.delete(schema.users).where(eq(schema.users.id, user.id)).run()
+  })
   await clearUserSession(event)
 
   return { ok: true }

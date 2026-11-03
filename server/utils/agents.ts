@@ -268,19 +268,22 @@ export function suspendAgents(agentIds: string[]): number {
 /**
  * Take one agent out of one project. Its cards there are unassigned: an agent
  * that can no longer open a project cannot work on them, so leaving its name on
- * them would hide that nobody is.
+ * them would hide that nobody is. Each card's history says so, against `actor`:
+ * whoever's request took the agent out, directly or by removing its manager.
  */
-export function removeAgentFromProject(agentId: string, projectId: string): number {
+export function removeAgentFromProject(agentId: string, projectId: string, actor: HistoryActor): number {
   const unassigned = db.transaction(() => {
     db.delete(schema.projectMembers)
       .where(and(eq(schema.projectMembers.projectId, projectId), eq(schema.projectMembers.userId, agentId)))
       .run()
-    return db.update(schema.cards)
+    const cards = db.update(schema.cards)
       .set({ assigneeId: null, updatedAt: new Date() })
       .where(and(eq(schema.cards.projectId, projectId), eq(schema.cards.assigneeId, agentId)))
       .returning({ id: schema.cards.id })
       .all()
-      .length
+    const agent = userSide(agentId)
+    recordCardEvents(actor, cards.map(c => ({ cardId: c.id, field: 'assignee' as const, from: agent, to: null })))
+    return cards.length
   })
   if (unassigned) emitViewChange(projectId)
   return unassigned
@@ -290,7 +293,7 @@ export function removeAgentFromProject(agentId: string, projectId: string): numb
  * A person left a project, so the agents they manage leave it too. Returns the
  * agents removed and how many of their cards were unassigned.
  */
-export function removeManagedAgentsFromProject(managerId: string, projectId: string) {
+export function removeManagedAgentsFromProject(managerId: string, projectId: string, actor: HistoryActor) {
   const agents = db.select({ id: schema.users.id, name: schema.users.name })
     .from(schema.projectMembers)
     .innerJoin(schema.users, eq(schema.projectMembers.userId, schema.users.id))
@@ -301,7 +304,7 @@ export function removeManagedAgentsFromProject(managerId: string, projectId: str
     ))
     .all()
   let unassignedCards = 0
-  for (const agent of agents) unassignedCards += removeAgentFromProject(agent.id, projectId)
+  for (const agent of agents) unassignedCards += removeAgentFromProject(agent.id, projectId, actor)
   return { agents, unassignedCards }
 }
 
@@ -340,9 +343,9 @@ export function planAgentMemberships(agentIds: string[], manager: { id: string, 
 }
 
 /** Remove agents from every project `manager` is not in, keeping the invariant. */
-export function pruneAgentMemberships(agentIds: string[], manager: { id: string, isAdmin: number | boolean }): LostMembership[] {
+export function pruneAgentMemberships(agentIds: string[], manager: { id: string, isAdmin: number | boolean }, actor: HistoryActor): LostMembership[] {
   const lost = planAgentMemberships(agentIds, manager)
-  for (const m of lost) removeAgentFromProject(m.agentId, m.projectId)
+  for (const m of lost) removeAgentFromProject(m.agentId, m.projectId, actor)
   return lost
 }
 
@@ -351,7 +354,7 @@ export function pruneAgentMemberships(agentIds: string[], manager: { id: string,
  * admin and that every id is an agent; this checks the recipient. A suspended
  * agent stays suspended, for its new manager to wake.
  */
-export function transferAgents(agentIds: string[], toUserId: string, opts: { dryRun?: boolean } = {}) {
+export function transferAgents(agentIds: string[], toUserId: string, actor: HistoryActor, opts: { dryRun?: boolean } = {}) {
   const manager = loadUserRow(toUserId)
   if (!manager || !canManageAgents(manager)) {
     throw createError({ statusCode: 400, message: 'The new manager must be an active admin or a person allowed to create agents' })
@@ -363,7 +366,7 @@ export function transferAgents(agentIds: string[], toUserId: string, opts: { dry
     .set({ managedById: manager.id })
     .where(and(inArray(schema.users.id, agentIds), eq(schema.users.kind, 'agent')))
     .run()
-  return { manager, removedFrom: pruneAgentMemberships(agentIds, manager) }
+  return { manager, removedFrom: pruneAgentMemberships(agentIds, manager, actor) }
 }
 
 /** Load agents by id for a bulk action, 404 if any id is not an agent. */

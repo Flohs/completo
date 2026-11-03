@@ -5,7 +5,10 @@ import { eq } from 'drizzle-orm'
  * unassigned and its comments stay, as for a deleted person.
  */
 export default defineEventHandler(async (event) => {
-  const { agent } = await resolveManagedAgent(event)
-  db.delete(schema.users).where(eq(schema.users.id, agent.id)).run()
+  const { user, agent } = await resolveManagedAgent(event)
+  db.transaction(() => {
+    recordAccountRemoval(agent, user)
+    db.delete(schema.users).where(eq(schema.users.id, agent.id)).run()
+  })
   return { ok: true }
 })
