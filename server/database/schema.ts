@@ -15,13 +15,30 @@ export const users = sqliteTable('users', {
   // Opt-out for card-activity emails (assigned / mentioned). On by default, so
   // existing users start receiving them; the profile page turns them off.
   emailNotifications: integer('email_notifications').notNull().default(1),
+  // An agent is an account for an AI tool: it acts only through API tokens, its
+  // password hash is the unhashable '!agent' and its address is a synthetic
+  // `@agents.invalid` one that is never mailed or returned (see server/utils/agents.ts).
+  // Type-level only, like notifications.type: plain text in SQLite.
+  kind: text('kind', { enum: ['human', 'agent'] }).notNull().default('human'),
+  // The human responsible for an agent. Null on an agent whose manager was deleted;
+  // such an agent stays suspended until an admin transfers it. Always null on people.
+  managedById: text('managed_by_id').references((): AnySQLiteColumn => users.id, { onDelete: 'set null' }),
+  // Lets a non-admin create and manage agents. Admins can regardless.
+  canCreateAgents: integer('can_create_agents').notNull().default(0),
+  // Shown where a person shows an email address. Agents only.
+  description: text('description'),
+  // The avatar tint an agent's creator picked; people keep the hashed identityColor.
+  color: text('color'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 }, table => [
   // The `.unique()` above is case-sensitive (no COLLATE NOCASE), which let one person hold
   // two rows — `foo@x` and `Foo@x` — when an endpoint forgot to normalise. Every write path
   // now lowercases, and this makes the database refuse the mistake rather than trusting all
   // of them to keep remembering.
-  uniqueIndex('users_email_lower_unique').on(sql`lower(${table.email})`)
+  uniqueIndex('users_email_lower_unique').on(sql`lower(${table.email})`),
+  // The MCP layer resolves an assignee by name, so two agents called "Claude" would make
+  // "assign it to Claude" ambiguous. People may share names; agents may not.
+  uniqueIndex('users_agent_name_lower_unique').on(sql`lower(${table.name})`).where(sql`${table.kind} = 'agent'`)
 ])
 
 export const projects = sqliteTable('projects', {

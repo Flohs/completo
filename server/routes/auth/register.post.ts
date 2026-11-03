@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
     // nothing stranded them — they waited for an email that was never sent. Re-send their
     // setup link instead. The response below is identical either way, so this still reveals
     // nothing about whether the address exists.
-    if (isPendingSetup(existing) && !existing.suspendedAt) {
+    if (existing.kind !== 'agent' && isPendingSetup(existing) && !existing.suspendedAt) {
       await sendAccountSetupLink(existing, 'An administrator')
     }
 

@@ -97,6 +97,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     ...card!.cards,
-    assignee: card!.users ? { id: card!.users.id, name: card!.users.name, avatarUrl: card!.users.avatarUrl } : null
+    assignee: createUserRefs([card!.users]).ref(card!.users)
   }
 })

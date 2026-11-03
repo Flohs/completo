@@ -644,9 +644,12 @@ async function confirmDeleteTag(tagId: string) {
             Members
           </h2>
           <p class="text-xs text-dimmed mb-4">
-            People with access to this project
+            People and agents with access to this project
           </p>
-          <ProjectMembers :project-id="project.id" />
+          <ProjectMembers
+            :project-id="project.id"
+            :project-name="project.name"
+          />
         </div>
       </div>
 

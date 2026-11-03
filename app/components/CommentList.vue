@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { Mentionable } from '~/types/card'
 import type { Comment } from '~/composables/useComments'
 
 const props = defineProps<{
   cardId: number | null | undefined
-  members?: Array<{ id: string, name: string, email?: string }>
+  members?: Mentionable[]
   projectSlug?: string
   projectKey?: string
   readonly?: boolean
@@ -310,6 +311,8 @@ onUnmounted(() => document.removeEventListener('keydown', handleCmdEnter, true))
         <UiAvatar
           :src="comment.authorAvatarUrl"
           :alt="comment.authorName"
+          :kind="comment.authorKind"
+          :color="comment.authorColor"
           :tint="!!comment.authorName"
           size="xs"
           class="shrink-0 mt-4 group-first:mt-0"
@@ -341,6 +344,10 @@ onUnmounted(() => document.removeEventListener('keydown', handleCmdEnter, true))
               <!-- authorId is nulled when a user is deleted, so the name can be missing -->
               {{ comment.authorName ?? 'Deleted user' }}
             </span>
+            <UiAgentChip
+              v-if="comment.authorKind === 'agent'"
+              :managed-by="comment.authorManagedBy"
+            />
             <!-- The exact moment sits behind the relative one. "2d ago" is what
                  anyone wants to read, but it flattens genuinely different moments
                  into one label — the demo card's first three comments are 23

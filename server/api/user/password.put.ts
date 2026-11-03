@@ -2,6 +2,9 @@ import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const { user } = await resolveAuth(event)
+  if (user.kind === 'agent') {
+    throw createError({ statusCode: 403, message: 'Agents have no password' })
+  }
   const { currentPassword, newPassword } = await readBody<{ currentPassword: string, newPassword: string }>(event)
 
   if (!currentPassword || !newPassword) {

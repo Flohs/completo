@@ -44,7 +44,7 @@ type Priority = 'low' | 'medium' | 'high' | 'urgent'
 
 interface ApiStatus { id: string, name: string, color: string | null, cardCount?: number }
 interface ApiTag { id: string, name: string, color: string }
-interface ApiMember { id: string, name: string, email?: string, role?: string }
+interface ApiMember { id: string, name: string, email?: string | null, role?: string, kind?: 'human' | 'agent' }
 interface ApiProjectRef { id: string, name: string, slug: string, key: string }
 interface ApiProject extends ApiProjectRef {
   description: string | null
@@ -267,7 +267,7 @@ const TOOLS: Tool[] = [
         statuses: project.statuses.map(s => ({ name: s.name, cards: s.cardCount ?? 0, done: s.id === project.doneStatusId })),
         doneRetentionDays: project.doneRetentionDays,
         tags: project.tags.map(t => t.name),
-        members: members.map(m => ({ name: m.name, role: m.role })),
+        members: members.map(m => ({ name: m.name, role: m.role, kind: m.kind })),
         boards: project.boards.map(b => b.name),
         lists: project.lists.map(l => l.name),
         openCards: project.openCards,

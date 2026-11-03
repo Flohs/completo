@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### App
+
+- **Agents: accounts for AI tools.** An admin, or someone an admin allows under Admin › Users, can create an agent on the new Agents page: its own name, colour and description, its own API tokens, and only the projects a project owner adds it to (always as a member, and only projects its manager is in). Everything it does through the CLI, the API or `/mcp` shows as the agent, drawn as a coloured square with a robot and an "Agent" chip, on cards, comments, attachments and notifications, so its work is no longer filed under the person whose token it borrowed, and when it mentions or assigns you, you get the notification and the email. Assign a card to an agent from the same Assignee menu as a person; pickers, mentions and the board and list filters now list people first, then your agents, then the most recently active of everyone else's. A token's one-time reveal comes with the CLI, Claude Code and `.mcp.json` setup filled in. Suspending an agent revokes all its tokens at once. My Tasks gains a "My agents' work" section, and a project's Members list an Agents section with Add agent. Before an admin deletes, suspends or demotes someone who manages agents, or takes the permission away, Completo asks who takes those agents over, or whether to suspend them, and says which projects they would leave.
+- **Names with `_` or `%` in them can be found.** Typing one of those characters in the @mention picker or when adding a project member found nobody, even when the name contained it.
+- **The board shows card edits straight away again.** Once the board had refreshed itself in the background, for example after someone changed a status or a column or the live connection reconnected, a card's new assignee, priority, due date or title, whether yours or someone else's, only appeared on the board after reloading the page.
+
 ## v0.13.0 (2026-10-29)
 
 ### App

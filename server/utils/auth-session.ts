@@ -58,7 +58,9 @@ export function ensureNotSuspended(user: { suspendedAt: Date | null }) {
  * reported as an invalid link rather than "wrong kind of link": the caller supplied a token
  * they were never meant to use here, and naming the difference only helps them.
  *
- * Throws on an unknown, wrong-purpose, or expired token, or a missing user.
+ * Throws on an unknown, wrong-purpose, or expired token, or a missing user. Also on a
+ * token naming an agent: reset and setup both sign the caller in, and an agent never
+ * signs in.
  */
 export function lookupVerificationToken(
   token: string,
@@ -86,7 +88,7 @@ export function lookupVerificationToken(
     .where(eq(schema.users.id, tokenRow.userId))
     .get()
 
-  if (!user) {
+  if (!user || user.kind === 'agent') {
     throw createError({ statusCode: 400, message: `Invalid or expired ${label}` })
   }
 
