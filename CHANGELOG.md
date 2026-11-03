@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### App
+
+- **The board shows card edits straight away again.** Once the board had refreshed itself in the background, for example after someone changed a status or a column or the live connection reconnected, a card's new assignee, priority, due date or title, whether yours or someone else's, only appeared on the board after reloading the page.
+
 ## v0.13.0 (2026-10-29)
 
 ### App
