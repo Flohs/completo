@@ -66,10 +66,12 @@ jobs:
       # `pnpm install` — no change of ours involved, and v0.8.0's first attempt instead wedged
       # for 48 minutes on the same fault. Pinning the binfmt image makes the emulator a
       # declared dependency rather than a property of the runner. Bump deliberately.
+      # qemu-v9.2.2 built v0.13.0 on 2026-10-29, then hit the same fault twice in a row on
+      # v0.14.0 with an unchanged lockfile, Dockerfile and node image, so the pin is 10.2.3.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          image: tonistiigi/binfmt:qemu-v9.2.2
+          image: tonistiigi/binfmt:qemu-v10.2.3
           platforms: arm64
 
       - name: Set up Docker Buildx
