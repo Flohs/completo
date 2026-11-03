@@ -60,6 +60,7 @@ You didn't want that. You wanted a board with columns and cards. So that's what 
 - **Boards** — Create as many as you need. Configure the columns yourself. Done.
 - **Cards** — Title. Description you can actually format. Assignee. Priority. Drag it. That's the feature list.
 - **Comments** — Discuss the work where the work is. Markdown, `@mentions`, notifications. No second tool.
+- **History**: Every card shows who moved, assigned, retitled or retagged it, and when, right beside the comments.
 - **Projects** — Separate your work. Invite your team. Keep things tidy.
 - **My Tasks** — One checklist. Everything assigned to you. Across all projects. Check it off. Go home.
 - **Search** — `⌘K`. Title, description or ticket ID, across every project you're in. Type `TK-42` and you're there.
@@ -171,6 +172,8 @@ INSTRUCTIONS=Create feature branches named <ticket-id>-<slug>. Run tests before 
 ```
 
 Now tell your agent: *"grab the next ticket"*, *"work on TK-27"*, or *"what's a quick win I can knock out?"*.
+
+**Give the agent its own account.** On the Agents page, create an agent with its own name, tokens and project memberships. Its cards, comments and moves then show as the agent, not as the person whose token it borrowed, and you can assign cards to it like to anyone else. The token reveal comes with the CLI, Claude Code and `.mcp.json` setup filled in.
 
 **Local development:** To point the CLI at a local dev server instead of production, create a `.completo.local` file (gitignored) alongside your `.completo`:
 
