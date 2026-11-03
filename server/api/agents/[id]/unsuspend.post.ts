@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
  * comes back to it, however that state was reached.
  */
 export default defineEventHandler(async (event) => {
-  const { agent } = await resolveManagedAgent(event)
+  const { user, agent } = await resolveManagedAgent(event)
 
   const manager = agent.managedById ? loadUserRow(agent.managedById) : null
   if (!manager) {
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 409, message: `${manager.name} can no longer manage agents. An admin has to transfer it first.` })
   }
 
-  const removedFrom = pruneAgentMemberships([agent.id], manager)
+  const removedFrom = pruneAgentMemberships([agent.id], manager, user)
   db.update(schema.users).set({ suspendedAt: null }).where(eq(schema.users.id, agent.id)).run()
   return { ok: true, removedFrom }
 })

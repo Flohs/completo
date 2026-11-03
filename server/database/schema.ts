@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
-import { sqliteTable, text, integer, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, index, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { CARD_HISTORY_FIELDS } from '../../shared/utils/card-history-fields'
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -170,6 +171,41 @@ export const comments = sqliteTable('comments', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 })
+
+// A card's change history: one row per change, never merged, written by
+// `recordCardEvents` (server/utils/card-history.ts) on every path that changes a
+// recorded field; `tests/unit/card-history-recording.test.ts` derives those
+// paths. The card's creation is not a row: it is read off `cards.createdAt` and
+// `createdById`, so there is one source for it.
+//
+// No projectId, for the reason `comments` gives: access goes through the card.
+export const cardEvents = sqliteTable('card_events', {
+  // An integer, unlike every other table but `cards`, because it is the order:
+  // milliseconds still tie inside one request (a save that changes three fields)
+  // and a wall clock can step backwards, so insert order is what sequences a
+  // burst, and the history endpoint pages on it.
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  cardId: integer('card_id').notNull().references(() => cards.id, { onDelete: 'cascade' }),
+  // Kept when the account is deleted; `actorName` still says who it was.
+  actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  actorName: text('actor_name').notNull(),
+  // Type-level only, like notifications.type: plain text in SQLite, so adding a
+  // value needs no migration. The list is `shared/utils/card-history-fields.ts`.
+  field: text('field', { enum: CARD_HISTORY_FIELDS }).notNull(),
+  // Each side is the referenced row's id (status, user, tag, attachment) and its
+  // name at the time, or just the value (priority, title, due date as ISO). The
+  // name is the fallback for a row deleted since; a live row is read by its
+  // current name. A null side is "none": unassigned, no due date, tag not on the
+  // card. `description` records that it changed and never the text.
+  fromId: text('from_id'),
+  fromValue: text('from_value'),
+  toId: text('to_id'),
+  toValue: text('to_value'),
+  // Milliseconds: whole seconds cannot tell a burst apart.
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date())
+}, table => [
+  index('card_events_card_id_idx').on(table.cardId, table.id)
+])
 
 export const aiSkills = sqliteTable('ai_skills', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),

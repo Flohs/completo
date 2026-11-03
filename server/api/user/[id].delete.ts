@@ -21,6 +21,9 @@ export default defineEventHandler(async (event) => {
   // Their active agents need a new manager, or suspending, before they go.
   assertNoActiveAgents(targetUser)
 
-  db.delete(schema.users).where(eq(schema.users.id, id)).run()
+  db.transaction(() => {
+    recordAccountRemoval(targetUser, user)
+    db.delete(schema.users).where(eq(schema.users.id, id)).run()
+  })
   return { ok: true }
 })

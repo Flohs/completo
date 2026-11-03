@@ -5,7 +5,7 @@
  * pointing at a manager who is about to go.
  */
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const { user } = await requireAdmin(event)
   const id = getRouterParam(event, 'id')!
   const body = await readBody<{ action?: string, toUserId?: string, dryRun?: boolean }>(event)
 
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     if (body.toUserId === id) {
       throw createError({ statusCode: 400, message: 'Choose someone else to take the agents over' })
     }
-    const { manager, removedFrom } = transferAgents(agentIds, body.toUserId, { dryRun: body.dryRun })
+    const { manager, removedFrom } = transferAgents(agentIds, body.toUserId, user, { dryRun: body.dryRun })
     return { agentIds, manager: { id: manager.id, name: manager.name }, removedFrom }
   }
 

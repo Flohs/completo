@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (target?.kind === 'agent') {
-    const unassignedCards = targetMembership ? removeAgentFromProject(userId!, project.id) : 0
+    const unassignedCards = targetMembership ? removeAgentFromProject(userId!, project.id, user) : 0
     return { ok: true, removedAgents: [], unassignedCards }
   }
 
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
   // the agents this person manages leave with them. An admin's agents are the
   // exception, since an admin manager reaches every project anyway.
   const { agents, unassignedCards } = target && !target.isAdmin
-    ? removeManagedAgentsFromProject(userId!, project.id)
+    ? removeManagedAgentsFromProject(userId!, project.id, user)
     : { agents: [], unassignedCards: 0 }
 
   return { ok: true, removedAgents: agents, unassignedCards }

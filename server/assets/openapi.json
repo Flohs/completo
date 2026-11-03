@@ -4820,6 +4820,95 @@
         }
       }
     },
+    "/api/cards/{id}/history": {
+      "get": {
+        "tags": [
+          "Cards"
+        ],
+        "summary": "Card history",
+        "description": "Who changed what on a card, and when: status (including moves between columns), assignee, priority, due date, title, tags added and removed, attachments added and removed, and that the description was edited (never its text). The first entry is the card's creation. Oldest first within a page; pages run backwards from the newest, so pass the first event's `id` as `before` to read the page before it. History starts with the release that added it: changes made earlier were not recorded.",
+        "operationId": "getCardHistory",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CardId"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Events per page, from 1 to 500. Defaults to 200.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 200
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Return only events older than this event id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Read forward instead: only events newer than this event id (0 for all), oldest first, never the `created` entry. Cannot be combined with `before`. How an open timeline fetches only what is new.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the card's history, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CardEvent"
+                      }
+                    },
+                    "hasMore": {
+                      "type": "boolean",
+                      "description": "Whether there are older events than this page, or with `after`, newer ones. When false on a backwards read, the page starts with the `created` entry."
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "How many entries the card's whole history has, the `created` entry included, whichever page this is."
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "The card's project, whose live event stream announces new entries."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/comments/{id}": {
       "put": {
         "tags": [
@@ -7177,6 +7266,82 @@
             }
           }
         ]
+      },
+      "CardEvent": {
+        "type": "object",
+        "description": "One change to a card. Every change is its own event, never merged with the one before however close together they were, ordered by `id`.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Increases with every change, so it is the exact order even where two share a millisecond. 0 for the `created` entry, which is read off the card and has no row of its own."
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "created",
+              "status",
+              "assignee",
+              "priority",
+              "dueDate",
+              "title",
+              "description",
+              "tag",
+              "attachment"
+            ],
+            "description": "What changed. `status` includes moves between board columns; reordering within a status is not recorded. `tag` and `attachment` events have only `to` when one was added and only `from` when one was removed."
+          },
+          "from": {
+            "type": "object",
+            "nullable": true,
+            "description": "One side of a change. Null means none: unassigned, no due date, a tag or file the card did not have. `description` events carry no sides at all: they record that the text changed, never the text.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "nullable": true,
+                "description": "The status, person, tag or attachment this side names. Null for plain values (priority, title, due date)."
+              },
+              "value": {
+                "type": "string",
+                "description": "The name the status, person or tag has now, or, once it has been deleted, the name it had when the change was made. For priority and title the value itself; for a due date an ISO 8601 date-time; for an attachment its file name."
+              }
+            }
+          },
+          "to": {
+            "type": "object",
+            "nullable": true,
+            "description": "One side of a change. Null means none: unassigned, no due date, a tag or file the card did not have. `description` events carry no sides at all: they record that the text changed, never the text.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "nullable": true,
+                "description": "The status, person, tag or attachment this side names. Null for plain values (priority, title, due date)."
+              },
+              "value": {
+                "type": "string",
+                "description": "The name the status, person or tag has now, or, once it has been deleted, the name it had when the change was made. For priority and title the value itself; for a due date an ISO 8601 date-time; for an attachment its file name."
+              }
+            }
+          },
+          "actor": {
+            "description": "Who made the change: the signed-in person, or the agent whose token made the request. A change a request caused on other cards (a deleted status moving its cards, a removed member's agents leaving, a deleted account or tag) is attributed to whoever made that request. Null once the account is deleted.",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserSummary"
+              }
+            ]
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The actor's name when the change was made, so a deleted account is still named. Null only on a `created` entry whose creator is gone."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the change was made, to the millisecond."
+          }
+        }
       }
     },
     "responses": {
