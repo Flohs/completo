@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   // fetch already reflects it.
   markCardRead(user.id, card.id)
 
-  return db.select({
+  const rows = db.select({
     id: schema.comments.id,
     cardId: schema.comments.cardId,
     body: schema.comments.body,
@@ -17,11 +17,16 @@ export default defineEventHandler(async (event) => {
     authorId: schema.comments.authorId,
     // Deliberately no email — user-facing lookups expose names only.
     authorName: schema.users.name,
-    authorAvatarUrl: schema.users.avatarUrl
+    authorAvatarUrl: schema.users.avatarUrl,
+    authorKind: schema.users.kind,
+    authorColor: schema.users.color,
+    authorManagedById: schema.users.managedById
   })
     .from(schema.comments)
     .leftJoin(schema.users, eq(schema.comments.authorId, schema.users.id))
     .where(eq(schema.comments.cardId, card.id))
     .orderBy(asc(schema.comments.createdAt))
     .all()
+
+  return withAuthorRefs(rows)
 })

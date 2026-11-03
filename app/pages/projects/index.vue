@@ -18,7 +18,7 @@ interface ProjectListItem {
   totalCards: number
   openCards: number
   memberCount: number
-  memberAvatars: Array<{ name: string, avatarUrl: string | null }>
+  memberAvatars: Array<{ name: string, avatarUrl: string | null, kind?: 'human' | 'agent', color?: string | null }>
   lastActivity: string | null
 }
 
@@ -285,6 +285,8 @@ const totalBoards = computed(() => projects.value?.reduce((sum, p) => sum + (p.b
                   :key="mIdx"
                   :src="m.avatarUrl || undefined"
                   :alt="m.name"
+                  :kind="m.kind"
+                  :color="m.color"
                   size="3xs"
                   class="ring-2 ring-bg"
                 />

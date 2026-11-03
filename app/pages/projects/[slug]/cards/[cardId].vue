@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Member, PersonRef } from '~/types/card'
+
 definePageMeta({ layout: 'default' })
 
 const route = useRoute()
@@ -15,12 +17,12 @@ interface CardDetail {
   dueDate: string | null
   tags: Array<{ id: string, name: string, color: string }>
   /** Null if the creator's account was deleted, or the card predates creator tracking. */
-  creator: { id: string, name: string, avatarUrl: string | null } | null
+  creator: PersonRef | null
   createdAt: string
   updatedAt: string
   project: { id: string, name: string, slug: string, key: string } | null
   statuses: Array<{ id: string, name: string, color: string | null }>
-  members: Array<{ id: string, name: string, avatarUrl: string | null }>
+  members: Member[]
   projectTags: Array<{ id: string, name: string, color: string }>
   /** Viewer's role in this project; admins get a synthetic 'owner'. */
   role: string

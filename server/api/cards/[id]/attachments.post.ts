@@ -39,5 +39,5 @@ export default defineEventHandler(async (event) => {
   emitCardChange(card.id, card.projectId)
 
   setResponseStatus(event, 201)
-  return attachment
+  return { ...attachment, uploader: createUserRefs([user]).ref(user) }
 })

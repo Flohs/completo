@@ -414,6 +414,10 @@
    AA, and "fine" only next to the pill's own 2.50:1, which was never a standard to
    meet. Both are now held to 4.5:1 by the same assertion.
 
+   An agent's avatar is this same recipe on a rounded square, tinted with the
+   colour its creator picked from `COLOR_PALETTE` and carrying the bot glyph in
+   place of initials; the assertion covers those sixteen hexes as well.
+
    It still cannot simply *be* `.swatch`: that sets `color` on the element it is
    applied to, and UAvatar's initials live in a *child* carrying its own
    `text-muted`. A directly-declared colour beats an inherited one whatever the

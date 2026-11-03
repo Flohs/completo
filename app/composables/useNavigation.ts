@@ -27,7 +27,10 @@ export function useNavigation() {
       {
         items: [
           { label: 'My Tasks', icon: 'i-lucide-check-square', to: '/my-tasks' },
-          { label: 'All Projects', icon: 'i-lucide-layout-grid', to: '/projects' }
+          { label: 'All Projects', icon: 'i-lucide-layout-grid', to: '/projects' },
+          // In the top group rather than under Admin: people an admin allows
+          // manage their own agents here too, and they have no Admin section.
+          ...(user.value?.canManageAgents ? [{ label: 'Agents', icon: 'i-lucide-bot', to: '/agents' }] : [])
         ]
       }
     ]

@@ -1,7 +1,10 @@
 import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  const { user, project } = await resolveProject(event, { auth: 'owner' })
+  const { user, project, membership } = await resolveProject(event)
+  if (user.kind === 'agent') {
+    throw createError({ statusCode: 403, message: 'Agents cannot manage members' })
+  }
   const userId = getRouterParam(event, 'userId')
 
   // Check if target is an owner and if they're the last one
@@ -11,6 +14,18 @@ export default defineEventHandler(async (event) => {
       eq(schema.projectMembers.userId, userId!)
     ))
     .get()
+
+  const target = db.select({ kind: schema.users.kind, managedById: schema.users.managedById, isAdmin: schema.users.isAdmin })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId!))
+    .get()
+
+  // Project owners remove anyone. An agent's manager may also take their own agent
+  // out of a project they are only a member of: managing it includes that.
+  const isOwnAgent = target?.kind === 'agent' && target.managedById === user.id
+  if (membership.role !== 'owner' && !isOwnAgent) {
+    throw createError({ statusCode: 403, message: 'Only the project owner can perform this action' })
+  }
 
   if (targetMembership?.role === 'owner') {
     const ownerCount = db.select().from(schema.projectMembers)
@@ -24,6 +39,11 @@ export default defineEventHandler(async (event) => {
     if (ownerCount <= 1) {
       throw createError({ statusCode: 400, message: 'Cannot remove the last owner' })
     }
+  }
+
+  if (target?.kind === 'agent') {
+    const unassignedCards = targetMembership ? removeAgentFromProject(userId!, project.id) : 0
+    return { ok: true, removedAgents: [], unassignedCards }
   }
 
   // Create notification BEFORE deletion (user loses access after)
@@ -43,5 +63,12 @@ export default defineEventHandler(async (event) => {
     ))
     .run()
 
-  return { ok: true }
+  // The membership invariant: an agent is only in projects its manager is in, so
+  // the agents this person manages leave with them. An admin's agents are the
+  // exception, since an admin manager reaches every project anyway.
+  const { agents, unassignedCards } = target && !target.isAdmin
+    ? removeManagedAgentsFromProject(userId!, project.id)
+    : { agents: [], unassignedCards: 0 }
+
+  return { ok: true, removedAgents: agents, unassignedCards }
 })

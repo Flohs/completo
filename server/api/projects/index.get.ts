@@ -78,7 +78,9 @@ export default defineEventHandler(async (event) => {
     projectId: schema.projectMembers.projectId,
     userId: schema.projectMembers.userId,
     name: schema.users.name,
-    avatarUrl: schema.users.avatarUrl
+    avatarUrl: schema.users.avatarUrl,
+    kind: schema.users.kind,
+    color: schema.users.color
   })
     .from(schema.projectMembers)
     .innerJoin(schema.users, eq(schema.projectMembers.userId, schema.users.id))
@@ -86,11 +88,11 @@ export default defineEventHandler(async (event) => {
     .all()
 
   const memberCountByProject = new Map<string, number>()
-  const memberAvatarsByProject = new Map<string, Array<{ name: string, avatarUrl: string | null }>>()
+  const memberAvatarsByProject = new Map<string, Array<{ name: string, avatarUrl: string | null, kind: 'human' | 'agent', color: string | null }>>()
   for (const m of allMembers) {
     memberCountByProject.set(m.projectId, (memberCountByProject.get(m.projectId) || 0) + 1)
     const avatars = memberAvatarsByProject.get(m.projectId) || []
-    if (avatars.length < 3) avatars.push({ name: m.name, avatarUrl: m.avatarUrl })
+    if (avatars.length < 3) avatars.push({ name: m.name, avatarUrl: m.avatarUrl, kind: m.kind, color: m.color })
     memberAvatarsByProject.set(m.projectId, avatars)
   }
 

@@ -2,6 +2,9 @@ import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const { project, user } = await resolveProject(event, { auth: 'owner' })
+  if (user.kind === 'agent') {
+    throw createError({ statusCode: 403, message: 'Agents cannot manage members' })
+  }
   const { userId, email } = await readBody<{ userId?: string, email?: string }>(event)
 
   if (!userId && !email) {
@@ -29,6 +32,26 @@ export default defineEventHandler(async (event) => {
 
     if (existing) {
       throw createError({ statusCode: 409, message: 'User is already a member' })
+    }
+
+    // The membership invariant: an agent joins only a project its manager is in
+    // (an admin's agents: any). Its role is always member, it is never mailed and
+    // never notified, so it takes none of the branches below.
+    if (targetUser.kind === 'agent') {
+      if (targetUser.suspendedAt) {
+        throw createError({ statusCode: 400, message: 'A suspended agent cannot be added to a project' })
+      }
+      const manager = targetUser.managedById ? loadUserRow(targetUser.managedById) : null
+      if (!agentMayJoinProject(manager ?? null, !!manager && isProjectMember(project.id, manager.id))) {
+        throw createError({ statusCode: 403, message: 'An agent can only join projects its manager is a member of' })
+      }
+      db.insert(schema.projectMembers).values({
+        projectId: project.id,
+        userId: targetUser.id,
+        role: 'member'
+      }).run()
+      setResponseStatus(event, 201)
+      return { added: true }
     }
 
     db.insert(schema.projectMembers).values({

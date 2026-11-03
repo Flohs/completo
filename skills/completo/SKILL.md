@@ -71,6 +71,12 @@ HANDOFF_STATUS=Review
 INSTRUCTIONS=Free-form guidance for agents — read this and follow it throughout the workflow.
 ```
 
+**Running as an agent.** When Completo has an agent account for you (its Agents page, set up by your
+user), configure the CLI with that agent's own token as `COMPLETO_TOKEN`, not a person's, and set
+`COMPLETO_USER` to the agent's address shown on that page (`<name>-xxxx@agents.invalid`). Your cards
+and comments are then attributed to the agent, `--me` / `--assign-me` mean the agent, and the people
+you @mention are notified.
+
 **If a `.completo` exists in the working directory (or any parent), read its `INSTRUCTIONS` field and
 follow it for the whole session.** The CLI walks up directories to find it. A gitignored
 `.completo.local` can override credentials for local dev (e.g. point at `http://localhost:3000`);
